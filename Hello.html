@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>3D Block Viewer with Jumping Main Cube</title>
+    <style>
+        body { margin: 0; overflow: hidden; }
+        canvas { display: block; }
+    </style>
+</head>
+<body>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script>
+        const scene = new THREE.Scene();
+        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+        const renderer = new THREE.WebGLRenderer();
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        document.body.appendChild(renderer.domElement);
+
+        // Central cube
+        const centralGeometry = new THREE.BoxGeometry(2, 2, 2);
+        const centralMaterial = new THREE.MeshPhongMaterial({ color: 0xFFFFFF }); // Changed to white
+        const centralCube = new THREE.Mesh(centralGeometry, centralMaterial);
+        centralCube.position.set(0, 0, 0);
+        scene.add(centralCube);
+
+        const light = new THREE.PointLight(0xffffff, 1, 100);
+        light.position.set(0, 0, 10);
+        scene.add(light);
+
+        camera.position.z = 10;
+
+        let smallCube = null;
+        let isJumping = false;
+        let jumpVelocity = 0;
+        const gravity = -0.01;
+        const jumpStrength = 0.2;
+
+        function createSmallCube() {
+            if (smallCube) return;
+
+            // Increase the size of the small cubes
+            const size = 0.5 + Math.random() * 0.5; // Random size between 0.5 and 1
+            const geometry = new THREE.BoxGeometry(size, size, size);
+            const material = new THREE.MeshPhongMaterial({ color: Math.random() * 0xffffff });
+            smallCube = new THREE.Mesh(geometry, material);
+            
+            // Position the small cube to come from the right side
+            smallCube.position.x = 15;
+            smallCube.position.y = (Math.random() - 0.5) * 10; // Random y position within a smaller range
+            smallCube.position.z = 0; // Fixed z position for linear movement
+
+            scene.add(smallCube);
+        }
+
+        function moveSmallCube() {
+            if (!smallCube) return;
+
+            // Move the small cube faster
+            smallCube.position.x -= 0.2;
+
+            // Remove the cube when it's off-screen to the left
+            if (smallCube.position.x < -10) {
+                scene.remove(smallCube);
+                smallCube = null;
+            }
+        }
+
+        function jumpCube() {
+            if (isJumping) {
+                jumpVelocity += gravity;
+                centralCube.position.y += jumpVelocity;
+
+                if (centralCube.position.y <= 0) {
+                    centralCube.position.y = 0;
+                    isJumping = false;
+                    jumpVelocity = 0;
+                }
+            }
+        }
+
+        function onKeyDown(event) {
+            if (event.code === 'Space' && !isJumping) {
+                isJumping = true;
+                jumpVelocity = jumpStrength;
+            }
+        }
+
+        function animate() {
+            requestAnimationFrame(animate);
+            moveSmallCube();
+            jumpCube();
+            renderer.render(scene, camera);
+        }
+
+        // Reduce the interval for creating small cubes (e.g., from 2000ms to 1000ms)
+        setInterval(createSmallCube, 1000);
+
+        window.addEventListener('keydown', onKeyDown);
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        }, false);
+
+        animate();
+    </script>
+</body>
+</html>
